@@ -8,8 +8,8 @@ const V = {
     name(v) {
         if (!v || !v.trim()) return { ok: false, msg: 'الاسم مطلوب' };
         const w = v.trim().split(/\s+/);
-        if (w.length < 3) return { ok: false, msg: `يجب أن يكون الاسم ثلاثي (${w.length}/3)` };
-        if (w.length > 3) return { ok: false, msg: 'الاسم يجب أن يكون 3 كلمات فقط' };
+        if (w.length < 4) return { ok: false, msg: `يجب أن يكون الاسم رباعي (${w.length}/4)` };
+        if (w.length > 4) return { ok: false, msg: 'الاسم يجب أن يكون 4 كلمات فقط' };
         for (const x of w) if (x.length < 2) return { ok: false, msg: 'كل كلمة حرفين على الأقل' };
         return { ok: true };
     },

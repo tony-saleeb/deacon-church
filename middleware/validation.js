@@ -22,8 +22,8 @@ function validateFullName(name) {
     }
     const trimmed = name.trim();
     const words = trimmed.split(/\s+/);
-    if (words.length !== 3) {
-        return { valid: false, message: 'الاسم يجب أن يكون ثلاثي (3 كلمات)' };
+    if (words.length !== 4) {
+        return { valid: false, message: 'الاسم يجب أن يكون رباعي (4 كلمات)' };
     }
     for (const word of words) {
         if (word.length < 2) {
