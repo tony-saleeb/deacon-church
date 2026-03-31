@@ -236,7 +236,7 @@ router.put('/settings', adminAuth, async (req, res) => {
 // GET /api/admin/export — Export all bookings as CSV
 router.get('/export', adminAuth, async (req, res) => {
     try {
-        const bookings = await dbAll(`
+        const result = await db.execute(`
             SELECT d.full_name as "الاسم", d.phone as "التليفون",
                    d.stage as "المرحلة", d.diaconal_rank as "الرتبة",
                    ad.label as "اليوم", ad.day_date as "التاريخ",
@@ -248,14 +248,14 @@ router.get('/export', adminAuth, async (req, res) => {
             ORDER BY ad.day_date, d.full_name
         `);
 
-        if (bookings.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ success: false, message: 'لا توجد حجوزات للتصدير' });
         }
 
         const BOM = '\uFEFF';
-        const headers = Object.keys(bookings[0]);
+        const headers = result.columns;
         const csv = BOM + headers.join(',') + '\n' +
-            bookings.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+            result.rows.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', 'attachment; filename=bookings.csv');
