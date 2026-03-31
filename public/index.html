@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="نظام حجز الشمامسة — احجز مكانك في الكنيسة أو نادي القديسة مارينا"
+    />
+    <meta name="theme-color" content="#0a0b10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>نظام حجز الشمامسة</title>
+    <link rel="stylesheet" href="/css/styles.css?v=2" />
+  </head>
+  <body>
+    <div class="toast-wrap" id="toasts"></div>
+    <div class="loader-overlay" id="loader" style="display: none">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="app">
+      <header class="header">
+        <div class="logo">
+          <span class="icon xl"
+            ><svg viewBox="0 0 24 24">
+              <path d="M18 2H6l-4 8h20L18 2z" />
+              <path d="M2 10v12h20V10" />
+              <path d="M12 10v12" /></svg
+          ></span>
+        </div>
+        <h1>نظام حجز الشمامسة</h1>
+        <p class="subtitle">الكنيسة · نادي القديسة مارينا</p>
+      </header>
+
+      <!-- Tabs -->
+      <div class="app-tabs" id="app-tabs">
+        <button class="app-tab active" data-flow="book">حجز جديد</button>
+        <button class="app-tab" data-flow="my-bookings">حجوزاتي</button>
+      </div>
+
+      <!-- Book Flow -->
+      <div id="flow-book">
+        <!-- Progress -->
+        <div class="progress-bar" id="progress-bar">
+          <div class="step-item active" data-step="1">
+            <div class="step-circle">
+              <span class="num">1</span>
+              <span class="check icon sm"
+                ><svg viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" /></svg
+              ></span>
+            </div>
+            <span class="step-label">البيانات</span>
+          </div>
+          <div class="step-line" data-after="1"></div>
+          <div class="step-item" data-step="2">
+            <div class="step-circle">
+              <span class="num">2</span>
+              <span class="check icon sm"
+                ><svg viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" /></svg
+              ></span>
+            </div>
+            <span class="step-label">اليوم</span>
+          </div>
+          <div class="step-line" data-after="2"></div>
+          <div class="step-item" data-step="3">
+            <div class="step-circle">
+              <span class="num">3</span>
+              <span class="check icon sm"
+                ><svg viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" /></svg
+              ></span>
+            </div>
+            <span class="step-label">المكان</span>
+          </div>
+          <div class="step-line" data-after="3"></div>
+          <div class="step-item" data-step="4">
+            <div class="step-circle">
+              <span class="num">4</span>
+              <span class="check icon sm"
+                ><svg viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" /></svg
+              ></span>
+            </div>
+            <span class="step-label">التأكيد</span>
+          </div>
+        </div>
+
+        <!-- Step 1: Personal Info -->
+        <div class="panel active" id="panel-1">
+          <div class="card">
+            <div class="card-head">
+              <div class="badge-icon">
+                <span class="icon"
+                  ><svg viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                    <circle cx="12" cy="7" r="4" /></svg
+                ></span>
+              </div>
+              <h2>البيانات الشخصية</h2>
+            </div>
+
+            <div class="form-row">
+              <label for="f-name"
+                >الاسم الثلاثي <span class="req">*</span></label
+              >
+              <input
+                type="text"
+                id="f-name"
+                class="input"
+                placeholder="الاسم الأول ـ الأب ـ العائلة"
+                autocomplete="name"
+              />
+              <div class="form-err" id="err-name"></div>
+              <div class="form-hint">يجب أن يكون الاسم مكون من 3 كلمات</div>
+            </div>
+
+            <div class="form-row">
+              <label for="f-phone"
+                >رقم التليفون <span class="req">*</span></label
+              >
+              <input
+                type="tel"
+                id="f-phone"
+                class="input"
+                placeholder="01xxxxxxxxx"
+                autocomplete="tel"
+                dir="ltr"
+                style="text-align: right"
+                inputmode="tel"
+              />
+              <div class="form-err" id="err-phone"></div>
+            </div>
+
+            <div class="form-row">
+              <label for="f-stage">المرحلة <span class="req">*</span></label>
+              <select id="f-stage" class="input">
+                <option value="">اختر المرحلة...</option>
+                <option value="خامسة و سادسة">خامسة و سادسة</option>
+                <option value="اعدادي">إعدادي</option>
+                <option value="ثانوي">ثانوي</option>
+                <option value="شباب">شباب</option>
+                <option value="خريجين">خريجين</option>
+              </select>
+              <div class="form-err" id="err-stage"></div>
+            </div>
+
+            <div class="form-row">
+              <label for="f-rank"
+                >الرتبة الشماسية <span class="req">*</span></label
+              >
+              <select id="f-rank" class="input">
+                <option value="">اختر الرتبة...</option>
+                <option value="ابصالتوس">ابصالتوس (Psaltos)</option>
+                <option value="اغنسطس">اغنسطس (Anagnostes)</option>
+                <option value="ايبوذياكون">ايبوذياكون (Epideacon)</option>
+                <option value="ذياكون">ذياكون (Deacon)</option>
+                <option value="ارشيذياكون">ارشيذياكون (Archdeacon)</option>
+              </select>
+              <div class="form-err" id="err-rank"></div>
+            </div>
+
+            <div class="nav-bar">
+              <button class="btn btn-primary btn-block" id="go-2">
+                التالي
+              </button>
+            </div>
+          </div>
+          <div class="text-center mt-12">
+            <a href="/admin" class="link">
+              <span class="icon sm"
+                ><svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+                  /></svg
+              ></span>
+              لوحة التحكم
+            </a>
+          </div>
+        </div>
+
+        <!-- Step 2: Day -->
+        <div class="panel" id="panel-2">
+          <div class="card">
+            <div class="card-head">
+              <div class="badge-icon">
+                <span class="icon"
+                  ><svg viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" /></svg
+                ></span>
+              </div>
+              <h2>اختر اليوم</h2>
+            </div>
+            <div class="days-grid" id="days-grid"></div>
+            <div class="nav-bar">
+              <button class="btn btn-ghost" id="back-1">
+                <span class="icon sm"
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="9 18 15 12 9 6" /></svg
+                ></span>
+              </button>
+              <button class="btn btn-primary" id="go-3">التالي</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Location -->
+        <div class="panel" id="panel-3">
+          <div class="card">
+            <div class="card-head">
+              <div class="badge-icon">
+                <span class="icon"
+                  ><svg viewBox="0 0 24 24">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                    <circle cx="12" cy="10" r="3" /></svg
+                ></span>
+              </div>
+              <h2>اختر المكان</h2>
+            </div>
+
+            <div class="loc-grid">
+              <div class="loc-card" id="loc-church">
+                <div class="loc-icon">
+                  <span class="icon lg"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M18 2H6l-4 8h20L18 2z" />
+                      <path d="M2 10v12h20V10" />
+                      <path d="M12 10v12" /></svg
+                  ></span>
+                </div>
+                <div class="loc-name">الكنيسة</div>
+              </div>
+
+              <div class="loc-card" id="loc-club">
+                <div class="loc-icon">
+                  <span class="icon lg"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                      <polyline points="9 22 9 12 15 12 15 22" /></svg
+                  ></span>
+                </div>
+                <div class="loc-name">نادي القديسة مارينا</div>
+              </div>
+            </div>
+
+            <div
+              class="form-err"
+              id="church-limit"
+              style="margin-top: 10px"
+            ></div>
+            <div class="suggest-bar hidden" id="suggest">
+              <span class="icon sm" style="color: var(--warning)"
+                ><svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" /></svg
+              ></span>
+              <span>الكنيسة ممتلئة</span>
+              <button
+                class="sug-btn"
+                onclick="document.getElementById('loc-club').click()"
+              >
+                احجز في النادي
+              </button>
+            </div>
+
+            <div class="nav-bar">
+              <button class="btn btn-ghost" id="back-2">
+                <span class="icon sm"
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="9 18 15 12 9 6" /></svg
+                ></span>
+              </button>
+              <button class="btn btn-primary" id="go-4">التالي</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: Confirm -->
+        <div class="panel" id="panel-4">
+          <div class="card">
+            <div class="card-head">
+              <div
+                class="badge-icon"
+                style="background: var(--success-light); color: var(--success)"
+              >
+                <span class="icon"
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" /></svg
+                ></span>
+              </div>
+              <h2>مراجعة وتأكيد</h2>
+            </div>
+            <ul class="summary-list" id="summary"></ul>
+            <div class="nav-bar">
+              <button class="btn btn-ghost" id="back-3">
+                <span class="icon sm"
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="9 18 15 12 9 6" /></svg
+                ></span>
+              </button>
+              <button class="btn btn-success" id="submit-btn">
+                تأكيد الحجز
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div class="panel" id="panel-done">
+          <div class="card">
+            <div class="success-screen">
+              <div class="success-check">
+                <span class="icon xl"
+                  ><svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12" /></svg
+                ></span>
+              </div>
+              <h2>تم الحجز بنجاح</h2>
+              <p>تم تسجيل حجزك — نراك هناك بإذن ربنا</p>
+              <div class="success-details" id="done-details"></div>
+              <button class="btn btn-primary btn-block" id="new-booking-btn">
+                حجز جديد
+              </button>
+            </div>
+            <!-- .success-screen -->
+          </div>
+          <!-- .card -->
+        </div>
+        <!-- #panel-done -->
+      </div>
+      <!-- #flow-book -->
+
+      <!-- My Bookings Flow -->
+      <div id="flow-my-bookings" style="display: none">
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <div class="badge-icon">
+                <span class="icon"
+                  ><svg viewBox="0 0 24 24">
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" /></svg
+                ></span>
+              </div>
+              <h2>حجوزاتي السابقة</h2>
+            </div>
+
+            <p
+              style="
+                color: var(--text-dim);
+                font-size: 0.9rem;
+                margin-bottom: 16px;
+              "
+            >
+              أدخل رقم التليفون للبحث عن حجوزاتك وإدارتها
+            </p>
+
+            <div class="form-row">
+              <input
+                type="tel"
+                id="my-phone"
+                class="input"
+                placeholder="رقم التليفون (01xxxxxxxxx)"
+                dir="ltr"
+                style="text-align: right"
+                inputmode="tel"
+              />
+              <button
+                class="btn btn-primary btn-block"
+                id="btn-load-my"
+                style="margin-top: 12px"
+              >
+                بحث في الحجوزات
+              </button>
+            </div>
+
+            <div id="my-list" style="margin-top: 24px"></div>
+          </div>
+          <!-- .card -->
+        </div>
+      </div>
+      <!-- #flow-my-bookings -->
+    </div>
+    <!-- .app -->
+
+    <script src="/js/api.js?v=4"></script>
+    <script src="/js/validation.js?v=4"></script>
+    <script src="/js/app.js?v=4"></script>
+  </body>
+</html>
