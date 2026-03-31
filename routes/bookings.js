@@ -3,53 +3,58 @@ const router = express.Router();
 const db = require('../db/database');
 const { validateLocation } = require('../middleware/validation');
 
+async function dbGet(sql, args = []) {
+    const res = await db.execute({ sql, args });
+    return res.rows[0] || null;
+}
+
+async function dbAll(sql, args = []) {
+    const res = await db.execute({ sql, args });
+    return res.rows;
+}
+
 // GET /api/bookings/availability?phone=xxx
-router.get('/availability', (req, res) => {
+router.get('/availability', async (req, res) => {
     try {
-        const churchCapacity = parseInt(
-            db.prepare("SELECT value FROM settings WHERE key = 'church_capacity'").get().value
-        );
+        const churchCapRow = await dbGet("SELECT value FROM settings WHERE key = 'church_capacity'");
+        const churchCapacity = parseInt(churchCapRow.value);
 
-        const days = db.prepare('SELECT * FROM available_days WHERE is_active = 1 ORDER BY day_date').all();
+        const days = await dbAll('SELECT * FROM available_days WHERE is_active = 1 ORDER BY day_date');
 
-        // Check which days this phone already booked + their church count
         const { phone } = req.query;
         let bookedDayIds = [];
         let userChurchCount = 0;
-        const maxPerDeacon = parseInt(
-            db.prepare("SELECT value FROM settings WHERE key = 'max_church_per_deacon'").get().value
-        );
+        
+        const maxRow = await dbGet("SELECT value FROM settings WHERE key = 'max_church_per_deacon'");
+        const maxPerDeacon = parseInt(maxRow.value);
+
         if (phone) {
             const cleaned = phone.replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
-            const deacon = db.prepare('SELECT id FROM deacons WHERE phone = ?').get(cleaned);
+            const deacon = await dbGet('SELECT id FROM deacons WHERE phone = ?', [cleaned]);
             if (deacon) {
-                bookedDayIds = db.prepare('SELECT day_id FROM bookings WHERE deacon_id = ?')
-                    .all(deacon.id).map(b => b.day_id);
-                userChurchCount = db.prepare(
-                    "SELECT COUNT(*) as c FROM bookings WHERE deacon_id = ? AND location = 'church'"
-                ).get(deacon.id).c;
+                const bRows = await dbAll('SELECT day_id FROM bookings WHERE deacon_id = ?', [deacon.id]);
+                bookedDayIds = bRows.map(b => b.day_id);
+                
+                const ucRow = await dbGet("SELECT COUNT(*) as c FROM bookings WHERE deacon_id = ? AND location = 'church'", [deacon.id]);
+                userChurchCount = ucRow.c;
             }
         }
 
-        const availability = days.map(day => {
-            const churchCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church'"
-            ).get(day.id).count;
+        const availability = [];
+        for (const day of days) {
+            const churchRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church'", [day.id]);
+            const clubRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'club'", [day.id]);
 
-            const clubCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'club'"
-            ).get(day.id).count;
-
-            return {
+            availability.push({
                 ...day,
-                church_booked: churchCount,
-                church_remaining: Math.max(0, churchCapacity - churchCount),
+                church_booked: churchRow.count,
+                church_remaining: Math.max(0, churchCapacity - churchRow.count),
                 church_capacity: churchCapacity,
-                church_full: churchCount >= churchCapacity,
-                club_booked: clubCount,
+                church_full: churchRow.count >= churchCapacity,
+                club_booked: clubRow.count,
                 booked_by_user: bookedDayIds.includes(day.id)
-            };
-        });
+            });
+        }
 
         res.json({
             success: true,
@@ -63,8 +68,8 @@ router.get('/availability', (req, res) => {
     }
 });
 
-// POST /api/bookings — Create a booking (transactional)
-router.post('/', (req, res) => {
+// POST /api/bookings — Create a booking
+router.post('/', async (req, res) => {
     const { deacon_id, day_id, location } = req.body;
 
     const locResult = validateLocation(location);
@@ -76,93 +81,80 @@ router.post('/', (req, res) => {
         return res.status(400).json({ success: false, message: 'بيانات الحجز غير مكتملة' });
     }
 
-    const createBooking = db.transaction(() => {
-        const deacon = db.prepare('SELECT id FROM deacons WHERE id = ?').get(deacon_id);
+    try {
+        const deacon = await dbGet('SELECT id FROM deacons WHERE id = ?', [deacon_id]);
         if (!deacon) {
-            return { status: 404, body: { success: false, message: 'لم يتم العثور على الشماس' } };
+            return res.status(404).json({ success: false, message: 'لم يتم العثور على الشماس' });
         }
 
-        const day = db.prepare('SELECT * FROM available_days WHERE id = ? AND is_active = 1').get(day_id);
+        const day = await dbGet('SELECT * FROM available_days WHERE id = ? AND is_active = 1', [day_id]);
         if (!day) {
-            return { status: 404, body: { success: false, message: 'هذا اليوم غير متاح للحجز' } };
+            return res.status(404).json({ success: false, message: 'هذا اليوم غير متاح للحجز' });
         }
 
-        const duplicate = db.prepare(
-            'SELECT id FROM bookings WHERE deacon_id = ? AND day_id = ?'
-        ).get(deacon_id, day_id);
+        const duplicate = await dbGet('SELECT id FROM bookings WHERE deacon_id = ? AND day_id = ?', [deacon_id, day_id]);
         if (duplicate) {
-            return { status: 409, body: { success: false, message: 'لقد قمت بحجز هذا اليوم بالفعل' } };
+            return res.status(409).json({ success: false, message: 'لقد قمت بحجز هذا اليوم بالفعل' });
         }
 
         if (location === 'church') {
-            const churchCapacity = parseInt(
-                db.prepare("SELECT value FROM settings WHERE key = 'church_capacity'").get().value
-            );
-            const maxPerDeacon = parseInt(
-                db.prepare("SELECT value FROM settings WHERE key = 'max_church_per_deacon'").get().value
-            );
+            const capRow = await dbGet("SELECT value FROM settings WHERE key = 'church_capacity'");
+            const churchCapacity = parseInt(capRow.value);
+            
+            const maxRow = await dbGet("SELECT value FROM settings WHERE key = 'max_church_per_deacon'");
+            const maxPerDeacon = parseInt(maxRow.value);
 
-            const churchCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church'"
-            ).get(day_id).count;
-
-            if (churchCount >= churchCapacity) {
-                return {
-                    status: 409,
-                    body: { success: false, message: 'الكنيسة ممتلئة في هذا اليوم', suggest_club: true, church_full: true }
-                };
+            const cCountRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church'", [day_id]);
+            if (cCountRow.count >= churchCapacity) {
+                return res.status(409).json({ success: false, message: 'الكنيسة ممتلئة في هذا اليوم', suggest_club: true, church_full: true });
             }
 
-            const deaconChurchCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE deacon_id = ? AND location = 'church'"
-            ).get(deacon_id).count;
-
-            if (deaconChurchCount >= maxPerDeacon) {
-                return {
-                    status: 403,
-                    body: { success: false, message: `وصلت للحد الأقصى (${maxPerDeacon}) للحجز في الكنيسة`, suggest_club: true }
-                };
+            const dChurchCountRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE deacon_id = ? AND location = 'church'", [deacon_id]);
+            if (dChurchCountRow.count >= maxPerDeacon) {
+                return res.status(403).json({ success: false, message: `وصلت للحد الأقصى (${maxPerDeacon}) للحجز في الكنيسة`, suggest_club: true });
             }
         }
 
-        const stmt = db.prepare('INSERT INTO bookings (deacon_id, day_id, location) VALUES (?, ?, ?)');
-        const result = stmt.run(deacon_id, day_id, location);
+        try {
+            const result = await db.execute({
+                sql: 'INSERT INTO bookings (deacon_id, day_id, location) VALUES (?, ?, ?)',
+                args: [deacon_id, day_id, location]
+            });
+            const insertId = Number(result.lastInsertRowid);
+            const booking = await dbGet(`
+                SELECT b.*, d.day_date, d.label as day_label
+                FROM bookings b JOIN available_days d ON b.day_id = d.id
+                WHERE b.id = ?
+            `, [insertId]);
 
-        const booking = db.prepare(`
-            SELECT b.*, d.day_date, d.label as day_label
-            FROM bookings b JOIN available_days d ON b.day_id = d.id
-            WHERE b.id = ?
-        `).get(result.lastInsertRowid);
+            return res.status(201).json({ success: true, message: 'تم الحجز بنجاح', booking });
+        } catch (insertErr) {
+            if (insertErr.message && insertErr.message.includes('UNIQUE constraint')) {
+                return res.status(409).json({ success: false, message: 'لقد قمت بحجز هذا اليوم بالفعل' });
+            }
+            throw insertErr;
+        }
 
-        return { status: 201, body: { success: true, message: 'تم الحجز بنجاح', booking } };
-    });
-
-    try {
-        const result = createBooking();
-        res.status(result.status).json(result.body);
     } catch (err) {
         console.error('Error creating booking:', err);
-        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-            return res.status(409).json({ success: false, message: 'لقد قمت بحجز هذا اليوم بالفعل' });
-        }
         res.status(500).json({ success: false, message: 'حدث خطأ في النظام' });
     }
 });
 
 // PUT /api/bookings/:id — Edit booking
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
     const { location, day_id } = req.body;
     const bookingId = req.params.id;
 
-    const editBooking = db.transaction(() => {
-        const existing = db.prepare(`
+    try {
+        const existing = await dbGet(`
             SELECT b.*, d.day_date FROM bookings b
             JOIN available_days d ON b.day_id = d.id
             WHERE b.id = ?
-        `).get(bookingId);
+        `, [bookingId]);
 
         if (!existing) {
-            return { status: 404, body: { success: false, message: 'لم يتم العثور على الحجز' } };
+            return res.status(404).json({ success: false, message: 'لم يتم العثور على الحجز' });
         }
 
         const newDayId = day_id || existing.day_id;
@@ -171,65 +163,54 @@ router.put('/:id', (req, res) => {
         if (location) {
             const locResult = validateLocation(location);
             if (!locResult.valid) {
-                return { status: 400, body: { success: false, message: locResult.message } };
+                return res.status(400).json({ success: false, message: locResult.message });
             }
         }
 
         if (day_id) {
-            const day = db.prepare('SELECT * FROM available_days WHERE id = ? AND is_active = 1').get(day_id);
+            const day = await dbGet('SELECT * FROM available_days WHERE id = ? AND is_active = 1', [day_id]);
             if (!day) {
-                return { status: 404, body: { success: false, message: 'هذا اليوم غير متاح' } };
+                return res.status(404).json({ success: false, message: 'هذا اليوم غير متاح' });
             }
 
-            const dup = db.prepare(
-                'SELECT id FROM bookings WHERE deacon_id = ? AND day_id = ? AND id != ?'
-            ).get(existing.deacon_id, day_id, bookingId);
+            const dup = await dbGet('SELECT id FROM bookings WHERE deacon_id = ? AND day_id = ? AND id != ?', [existing.deacon_id, day_id, bookingId]);
             if (dup) {
-                return { status: 409, body: { success: false, message: 'لديك حجز بالفعل في هذا اليوم' } };
+                return res.status(409).json({ success: false, message: 'لديك حجز بالفعل في هذا اليوم' });
             }
         }
 
         if (newLocation === 'church') {
-            const churchCapacity = parseInt(
-                db.prepare("SELECT value FROM settings WHERE key = 'church_capacity'").get().value
-            );
-            const maxPerDeacon = parseInt(
-                db.prepare("SELECT value FROM settings WHERE key = 'max_church_per_deacon'").get().value
-            );
+            const capRow = await dbGet("SELECT value FROM settings WHERE key = 'church_capacity'");
+            const churchCapacity = parseInt(capRow.value);
+            
+            const maxRow = await dbGet("SELECT value FROM settings WHERE key = 'max_church_per_deacon'");
+            const maxPerDeacon = parseInt(maxRow.value);
 
             const exclusion = existing.location === 'church' && existing.day_id === newDayId ? 1 : 0;
-            const churchCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church' AND id != ?"
-            ).get(newDayId, exclusion ? bookingId : -1).count;
-
-            if (churchCount >= churchCapacity) {
-                return { status: 409, body: { success: false, message: 'الكنيسة ممتلئة في هذا اليوم', suggest_club: true } };
+            const churchCountRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE day_id = ? AND location = 'church' AND id != ?", [newDayId, exclusion ? bookingId : -1]);
+            
+            if (churchCountRow.count >= churchCapacity) {
+                return res.status(409).json({ success: false, message: 'الكنيسة ممتلئة في هذا اليوم', suggest_club: true });
             }
 
-            const deaconChurchCount = db.prepare(
-                "SELECT COUNT(*) as count FROM bookings WHERE deacon_id = ? AND location = 'church' AND id != ?"
-            ).get(existing.deacon_id, bookingId).count;
-
-            if (deaconChurchCount >= maxPerDeacon) {
-                return { status: 403, body: { success: false, message: 'وصلت للحد الأقصى للحجز في الكنيسة', suggest_club: true } };
+            const deaconChurchCountRow = await dbGet("SELECT COUNT(*) as count FROM bookings WHERE deacon_id = ? AND location = 'church' AND id != ?", [existing.deacon_id, bookingId]);
+            if (deaconChurchCountRow.count >= maxPerDeacon) {
+                return res.status(403).json({ success: false, message: 'وصلت للحد الأقصى للحجز في الكنيسة', suggest_club: true });
             }
         }
 
-        db.prepare('UPDATE bookings SET day_id = ?, location = ? WHERE id = ?')
-            .run(newDayId, newLocation, bookingId);
+        await db.execute({
+            sql: 'UPDATE bookings SET day_id = ?, location = ? WHERE id = ?',
+            args: [newDayId, newLocation, bookingId]
+        });
 
-        const updated = db.prepare(`
+        const updated = await dbGet(`
             SELECT b.*, d.day_date, d.label as day_label
             FROM bookings b JOIN available_days d ON b.day_id = d.id
             WHERE b.id = ?
-        `).get(bookingId);
+        `, [bookingId]);
 
-        return { status: 200, body: { success: true, message: 'تم تعديل الحجز بنجاح', booking: updated } };
-    });
-
-    try {
-        const result = editBooking();
-        res.status(result.status).json(result.body);
+        return res.status(200).json({ success: true, message: 'تم تعديل الحجز بنجاح', booking: updated });
     } catch (err) {
         console.error('Error editing booking:', err);
         res.status(500).json({ success: false, message: 'حدث خطأ في النظام' });
@@ -237,14 +218,14 @@ router.put('/:id', (req, res) => {
 });
 
 // DELETE /api/bookings/:id — Cancel booking
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
-        const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(req.params.id);
+        const booking = await dbGet('SELECT * FROM bookings WHERE id = ?', [req.params.id]);
         if (!booking) {
             return res.status(404).json({ success: false, message: 'لم يتم العثور على الحجز' });
         }
 
-        db.prepare('DELETE FROM bookings WHERE id = ?').run(req.params.id);
+        await db.execute({ sql: 'DELETE FROM bookings WHERE id = ?', args: [req.params.id] });
         res.json({ success: true, message: 'تم إلغاء الحجز بنجاح' });
     } catch (err) {
         console.error('Error canceling booking:', err);

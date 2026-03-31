@@ -1,20 +1,29 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+require('dotenv').config();
+const { createClient } = require('@libsql/client');
 const fs = require('fs');
+const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'deacon.db');
+const url = process.env.TURSO_DATABASE_URL;
+const authToken = process.env.TURSO_AUTH_TOKEN;
 
-const db = new Database(DB_PATH);
+if (!url) {
+    throw new Error('TURSO_DATABASE_URL is not set. Please check your .env file or Vercel Environment Variables.');
+}
 
-// Enable WAL mode for better concurrent read performance
-db.pragma('journal_mode = WAL');
-// Enable foreign keys
-db.pragma('foreign_keys = ON');
+const db = createClient({
+    url: url,
+    authToken: authToken,
+});
 
-// Initialize schema
-const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
-db.exec(schema);
-
-console.log('Database initialized at', DB_PATH);
+(async () => {
+    try {
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        const schema = fs.readFileSync(schemaPath, 'utf-8');
+        await db.executeMultiple(schema);
+        console.log('Turso database connected and schema initialized.');
+    } catch (err) {
+        console.error('Failed to initialize Turso schema:', err);
+    }
+})();
 
 module.exports = db;

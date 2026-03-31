@@ -70,22 +70,28 @@ app.get('/admin/login', (req, res) => {
 });
 
 // Admin login POST (validates password, sets session cookie)
-app.post('/admin/login', (req, res) => {
+app.post('/admin/login', async (req, res) => {
     const { password } = req.body;
-    const adminPassword = db.prepare("SELECT value FROM settings WHERE key = 'admin_password'").get().value;
+    try {
+        const result = await db.execute({ sql: "SELECT value FROM settings WHERE key = 'admin_password'", args: [] });
+        const adminPassword = result.rows[0].value;
 
-    if (password === adminPassword) {
-        const sessionToken = generateSessionToken();
-        adminSessions.set(sessionToken, { expires: Date.now() + SESSION_TTL });
+        if (password === adminPassword) {
+            const sessionToken = generateSessionToken();
+            adminSessions.set(sessionToken, { expires: Date.now() + SESSION_TTL });
 
-        res.cookie('admin_session', sessionToken, {
-            httpOnly: true,
-            maxAge: SESSION_TTL,
-            sameSite: 'strict',
-            path: '/'
-        });
-        res.redirect('/admin');
-    } else {
+            res.cookie('admin_session', sessionToken, {
+                httpOnly: true,
+                maxAge: SESSION_TTL,
+                sameSite: 'strict',
+                path: '/'
+            });
+            res.redirect('/admin');
+        } else {
+            res.redirect('/admin/login?error=1');
+        }
+    } catch (err) {
+        console.error('Login error:', err);
         res.redirect('/admin/login?error=1');
     }
 });
@@ -107,10 +113,15 @@ app.get('/admin', (req, res) => {
 });
 
 // API: Get admin token from cookie session (so JS can bootstrap)
-app.get('/api/admin/token', (req, res) => {
+app.get('/api/admin/token', async (req, res) => {
     if (isAdminAuthenticated(req)) {
-        const pw = db.prepare("SELECT value FROM settings WHERE key = 'admin_password'").get().value;
-        res.json({ success: true, token: pw });
+        try {
+            const result = await db.execute({ sql: "SELECT value FROM settings WHERE key = 'admin_password'", args: [] });
+            const pw = result.rows[0].value;
+            res.json({ success: true, token: pw });
+        } catch (err) {
+            res.status(500).json({ success: false });
+        }
     } else {
         res.status(401).json({ success: false });
     }
@@ -122,7 +133,7 @@ app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/admin', require('./routes/admin'));
 
 // SPA fallback — serve index.html for non-API routes
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -135,7 +146,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`Deacon Booking System running at http://localhost:${PORT}`);
-    console.log(`Admin panel at http://localhost:${PORT}/admin`);
-});
+// For local development, listen on port. For Vercel, export the app.
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Deacon Booking System running at http://localhost:${PORT}`);
+        console.log(`Admin panel at http://localhost:${PORT}/admin`);
+    });
+}
+
+module.exports = app;
