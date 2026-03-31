@@ -144,7 +144,7 @@ router.post('/', async (req, res) => {
 // PUT /api/bookings/:id — Edit booking
 router.put('/:id', async (req, res) => {
     const { location, day_id } = req.body;
-    const bookingId = req.params.id;
+    const bookingId = Number(req.params.id);
 
     try {
         const existing = await dbGet(`
@@ -220,12 +220,13 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/bookings/:id — Cancel booking
 router.delete('/:id', async (req, res) => {
     try {
-        const booking = await dbGet('SELECT * FROM bookings WHERE id = ?', [req.params.id]);
+        const id = Number(req.params.id);
+        const booking = await dbGet('SELECT * FROM bookings WHERE id = ?', [id]);
         if (!booking) {
             return res.status(404).json({ success: false, message: 'لم يتم العثور على الحجز' });
         }
 
-        await db.execute({ sql: 'DELETE FROM bookings WHERE id = ?', args: [req.params.id] });
+        await db.execute({ sql: 'DELETE FROM bookings WHERE id = ?', args: [id] });
         res.json({ success: true, message: 'تم إلغاء الحجز بنجاح' });
     } catch (err) {
         console.error('Error canceling booking:', err);

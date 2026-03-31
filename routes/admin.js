@@ -165,17 +165,18 @@ router.post('/days', adminAuth, async (req, res) => {
 router.put('/days/:id', adminAuth, async (req, res) => {
     const { label, is_active } = req.body;
     try {
-        const day = await dbGet('SELECT * FROM available_days WHERE id = ?', [req.params.id]);
+        const id = Number(req.params.id);
+        const day = await dbGet('SELECT * FROM available_days WHERE id = ?', [id]);
         if (!day) {
             return res.status(404).json({ success: false, message: 'اليوم غير موجود' });
         }
 
         await db.execute({
             sql: 'UPDATE available_days SET label = ?, is_active = ? WHERE id = ?',
-            args: [label || day.label, is_active !== undefined ? is_active : day.is_active, req.params.id]
+            args: [label || day.label, is_active !== undefined ? is_active : day.is_active, id]
         });
 
-        const updated = await dbGet('SELECT * FROM available_days WHERE id = ?', [req.params.id]);
+        const updated = await dbGet('SELECT * FROM available_days WHERE id = ?', [id]);
         res.json({ success: true, day: updated });
     } catch (err) {
         res.status(500).json({ success: false, message: 'حدث خطأ في النظام' });
@@ -185,7 +186,8 @@ router.put('/days/:id', adminAuth, async (req, res) => {
 // DELETE /api/admin/days/:id
 router.delete('/days/:id', adminAuth, async (req, res) => {
     try {
-        const bRow = await dbGet('SELECT COUNT(*) as count FROM bookings WHERE day_id = ?', [req.params.id]);
+        const id = Number(req.params.id);
+        const bRow = await dbGet('SELECT COUNT(*) as count FROM bookings WHERE day_id = ?', [id]);
         const bookingCount = bRow.count;
         if (bookingCount > 0) {
             return res.status(400).json({
@@ -194,7 +196,7 @@ router.delete('/days/:id', adminAuth, async (req, res) => {
             });
         }
 
-        await db.execute({ sql: 'DELETE FROM available_days WHERE id = ?', args: [req.params.id] });
+        await db.execute({ sql: 'DELETE FROM available_days WHERE id = ?', args: [id] });
         res.json({ success: true, message: 'تم حذف اليوم' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'حدث خطأ في النظام' });
