@@ -67,6 +67,39 @@ function validateLocation(location) {
     return { valid: true, value: location };
 }
 
+function validateBirthDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') {
+        return { valid: false, message: 'تاريخ الميلاد مطلوب' };
+    }
+    
+    // YYYY-MM-DD
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateStr)) {
+        return { valid: false, message: 'تاريخ الميلاد غير صحيح' };
+    }
+
+    const birthDate = new Date(dateStr);
+    const today = new Date();
+    
+    if (isNaN(birthDate.getTime())) {
+        return { valid: false, message: 'تاريخ الميلاد غير صالح' };
+    }
+    
+    if (birthDate > today) {
+        return { valid: false, message: 'تاريخ الميلاد لا يمكن أن يكون في المستقبل' };
+    }
+
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    const calculatedAge = m < 0 || (m === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+
+    if (calculatedAge > 100) {
+        return { valid: false, message: 'تاريخ الميلاد يجب أن لا يتجاوز 100 عام' };
+    }
+
+    return { valid: true, value: dateStr };
+}
+
 function validateBookingInput(req, res, next) {
     const errors = [];
 
@@ -84,6 +117,11 @@ function validateBookingInput(req, res, next) {
     const rankResult = validateRank(req.body.diaconal_rank);
     if (!rankResult.valid) errors.push({ field: 'diaconal_rank', message: rankResult.message });
 
+    // Validate Birth Date
+    const dobResult = validateBirthDate(req.body.birth_date);
+    if (!dobResult.valid) errors.push({ field: 'birth_date', message: dobResult.message });
+    else req.body.birth_date = dobResult.value;
+
     if (errors.length > 0) {
         return res.status(400).json({ success: false, errors });
     }
@@ -99,5 +137,6 @@ module.exports = {
     validateStage,
     validateRank,
     validateLocation,
+    validateBirthDate,
     validateBookingInput
 };

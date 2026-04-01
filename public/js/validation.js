@@ -30,6 +30,21 @@ const V = {
         return this.RANKS.includes(v) ? { ok: true } : { ok: false, msg: 'الرتبة غير صحيحة' };
     },
 
+    dob(v) {
+        if (!v) return { ok: false, msg: 'تاريخ الميلاد مطلوب' };
+        const birthDate = new Date(v);
+        const today = new Date();
+        if (isNaN(birthDate.getTime())) return { ok: false, msg: 'تاريخ الميلاد غير صالح' };
+        if (birthDate > today) return { ok: false, msg: 'تاريخ الميلاد لا يمكن أن يكون في المستقبل' };
+        
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        const calculatedAge = m < 0 || (m === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+        
+        if (calculatedAge > 100) return { ok: false, msg: 'تاريخ الميلاد يجب أن لا يتجاوز 100 عام' };
+        return { ok: true };
+    },
+
     live(input, fn) {
         const errEl = input.closest('.form-row')?.querySelector('.form-err');
         const check = () => {

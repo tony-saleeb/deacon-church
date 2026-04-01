@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS deacons (
     full_name TEXT NOT NULL,
     stage TEXT NOT NULL,
     diaconal_rank TEXT NOT NULL,
+    birth_date TEXT,
     phone TEXT NOT NULL UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

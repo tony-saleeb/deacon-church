@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lines: document.querySelectorAll('.step-line'),
                 name: document.getElementById('f-name'),
                 phone: document.getElementById('f-phone'),
+                dob: document.getElementById('f-dob'),
                 stage: document.getElementById('f-stage'),
                 rank: document.getElementById('f-rank'),
                 daysGrid: document.getElementById('days-grid'),
@@ -77,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Live validation
             V.live(this.els.name, V.name.bind(V));
             V.live(this.els.phone, V.phone.bind(V));
+            V.live(this.els.dob, V.dob.bind(V));
 
             // Clickable progress steps
             this.els.steps.forEach(s => {
@@ -125,6 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = {
                 name: this.els.name.value,
                 phone: this.els.phone.value,
+                dob: this.els.dob.value,
                 stage: this.els.stage.value,
                 rank: this.els.rank.value,
             };
@@ -138,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data) {
                     this.els.name.value = data.name || '';
                     this.els.phone.value = data.phone || '';
+                    this.els.dob.value = data.dob || '';
                     this.els.stage.value = data.stage || '';
                     this.els.rank.value = data.rank || '';
                 }
@@ -184,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const checks = [
                 { fn: V.name(this.els.name.value), el: this.els.name, err: document.getElementById('err-name') },
                 { fn: V.phone(this.els.phone.value), el: this.els.phone, err: document.getElementById('err-phone') },
+                { fn: V.dob(this.els.dob.value), el: this.els.dob, err: document.getElementById('err-dob') },
                 { fn: V.stage(this.els.stage.value), el: this.els.stage, err: document.getElementById('err-stage') },
                 { fn: V.rank(this.els.rank.value), el: this.els.rank, err: document.getElementById('err-rank') },
             ];
@@ -294,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.els.summary.innerHTML = `
                 <li><span class="lbl">الاسم</span><span class="val">${this.els.name.value.trim()}</span></li>
                 <li><span class="lbl">التليفون</span><span class="val" dir="ltr">${this.els.phone.value.trim()}</span></li>
+                <li><span class="lbl">الميلاد</span><span class="val" dir="ltr">${this.els.dob.value}</span></li>
                 <li><span class="lbl">المرحلة</span><span class="val">${this.els.stage.value}</span></li>
                 <li><span class="lbl">الرتبة</span><span class="val">${this.els.rank.value}</span></li>
                 <li><span class="lbl">اليوم</span><span class="val">${this.selectedDay.label}</span></li>
@@ -309,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await api.book({
                 full_name: this.els.name.value.trim(),
                 phone,
+                birth_date: this.els.dob.value,
                 stage: this.els.stage.value,
                 diaconal_rank: this.els.rank.value,
                 day_id: this.selectedDay.id,
@@ -436,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
             this.maxReached = 1;
             // Keep the form data (name, phone, stage, rank) — don't clear
             // Clear validation errors
-            [this.els.name, this.els.phone, this.els.stage, this.els.rank].forEach(el => {
+            [this.els.name, this.els.phone, this.els.dob, this.els.stage, this.els.rank].forEach(el => {
                 el.classList.remove('err');
                 const err = el.closest('.form-row')?.querySelector('.form-err');
                 if (err) err.classList.remove('show');

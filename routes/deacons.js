@@ -15,7 +15,7 @@ async function dbAll(sql, args = []) {
 
 // POST /api/deacons/book — One-shot: register/find deacon + create booking
 router.post('/book', validateBookingInput, async (req, res) => {
-    const { full_name, stage, diaconal_rank, phone, day_id, location } = req.body;
+    const { full_name, stage, diaconal_rank, phone, day_id, location, birth_date } = req.body;
 
     const locResult = validateLocation(location);
     if (!locResult.valid) {
@@ -29,14 +29,14 @@ router.post('/book', validateBookingInput, async (req, res) => {
         let deacon = await dbGet('SELECT * FROM deacons WHERE phone = ?', [phone]);
         if (deacon) {
             await db.execute({
-                sql: 'UPDATE deacons SET full_name = ?, stage = ?, diaconal_rank = ? WHERE id = ?',
-                args: [full_name, stage, diaconal_rank, deacon.id]
+                sql: 'UPDATE deacons SET full_name = ?, stage = ?, diaconal_rank = ?, birth_date = ? WHERE id = ?',
+                args: [full_name, stage, diaconal_rank, birth_date, deacon.id]
             });
             deacon = await dbGet('SELECT * FROM deacons WHERE id = ?', [deacon.id]);
         } else {
             const result = await db.execute({
-                sql: 'INSERT INTO deacons (full_name, stage, diaconal_rank, phone) VALUES (?, ?, ?, ?)',
-                args: [full_name, stage, diaconal_rank, phone]
+                sql: 'INSERT INTO deacons (full_name, stage, diaconal_rank, phone, birth_date) VALUES (?, ?, ?, ?, ?)',
+                args: [full_name, stage, diaconal_rank, phone, birth_date]
             });
             deacon = await dbGet('SELECT * FROM deacons WHERE id = ?', [Number(result.lastInsertRowid)]);
         }
@@ -84,7 +84,7 @@ router.post('/book', validateBookingInput, async (req, res) => {
         return res.status(201).json({
             success: true,
             message: 'تم الحجز بنجاح',
-            deacon: { id: deacon.id, full_name: deacon.full_name, phone: deacon.phone, stage: deacon.stage, diaconal_rank: deacon.diaconal_rank },
+            deacon: { id: deacon.id, full_name: deacon.full_name, phone: deacon.phone, stage: deacon.stage, diaconal_rank: deacon.diaconal_rank, birth_date: deacon.birth_date },
             day: { label: day.label, day_date: day.day_date },
             location
         });

@@ -243,6 +243,7 @@ body {
     -webkit-appearance: none;
     appearance: none;
     direction: rtl;
+    color-scheme: dark;
 }
 
 .input::placeholder { color: var(--text-muted); }
