@@ -169,9 +169,12 @@
                 >تاريخ الميلاد <span class="req">*</span></label
               >
               <input
-                type="date"
+                type="text"
                 id="f-dob"
                 class="input"
+                placeholder="يوم - شهر - سنة"
+                onfocus="this.type='date'"
+                onblur="if(!this.value) this.type='text'"
                 required
               />
               <div class="form-err" id="err-dob"></div>
@@ -410,8 +413,8 @@
     </div>
     <!-- .app -->
 
-    <script src="/js/api.js?v=7"></script>
-    <script src="/js/validation.js?v=7"></script>
-    <script src="/js/app.js?v=7"></script>
+    <script src="/js/api.js?v=8"></script>
+    <script src="/js/validation.js?v=8"></script>
+    <script src="/js/app.js?v=8"></script>
   </body>
 </html>

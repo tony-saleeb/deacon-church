@@ -141,7 +141,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data) {
                     this.els.name.value = data.name || '';
                     this.els.phone.value = data.phone || '';
-                    this.els.dob.value = data.dob || '';
+                    if (data.dob) {
+                        this.els.dob.type = 'date';
+                        this.els.dob.value = data.dob;
+                    }
                     this.els.stage.value = data.stage || '';
                     this.els.rank.value = data.rank || '';
                 }
