@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Step 2: Load days (pass phone to check already-booked)
         async loadDays() {
             this.showLoader();
-            const phone = this.els.phone.value.trim().replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
+            const phone = this.els.phone.value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
             const res = await api.availability(phone);
             this.hideLoader();
 
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Submit
         async submit() {
             this.showLoader();
-            const phone = this.els.phone.value.trim().replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
+            const phone = this.els.phone.value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
             const res = await api.book({
                 full_name: this.els.name.value.trim(),
                 phone,
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── My Bookings Module ──
         async loadMyBookings() {
-            const phone = this.els.myPhone.value.trim().replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
+            const phone = this.els.myPhone.value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
             if (!phone) {
                 this.toast('يرجى كتابة رقم التليفون للبحث', 'warning');
                 return;

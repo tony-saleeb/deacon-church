@@ -100,7 +100,7 @@ router.get('/my-bookings', async (req, res) => {
     const { phone } = req.query;
     if (!phone) return res.status(400).json({ success: false, message: 'رقم التليفون مطلوب' });
 
-    const cleaned = phone.replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
+    const cleaned = phone.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s\-\(\)]/g, '').replace(/^\+?2/, '');
     
     try {
         const deacon = await dbGet('SELECT id, full_name, phone FROM deacons WHERE phone = ?', [cleaned]);

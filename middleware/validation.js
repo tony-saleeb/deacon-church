@@ -37,7 +37,8 @@ function validatePhone(phone) {
     if (!phone || typeof phone !== 'string') {
         return { valid: false, message: 'رقم التليفون مطلوب' };
     }
-    const cleaned = phone.trim().replace(/[\s\-\(\)]/g, '');
+    let cleaned = phone.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+    cleaned = cleaned.replace(/[\s\-\(\)]/g, '');
     const egyptPhone = /^(\+?2)?01[0125]\d{8}$/;
     if (!egyptPhone.test(cleaned)) {
         return { valid: false, message: 'رقم التليفون غير صحيح' };

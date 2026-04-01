@@ -15,7 +15,8 @@ const V = {
 
     phone(v) {
         if (!v || !v.trim()) return { ok: false, msg: 'رقم التليفون مطلوب' };
-        const c = v.trim().replace(/[\s\-\(\)]/g, '');
+        let c = v.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+        c = c.replace(/[\s\-\(\)]/g, '');
         if (!/^(\+?2)?01[0125]\d{8}$/.test(c)) return { ok: false, msg: 'رقم تليفون غير صحيح' };
         return { ok: true };
     },
