@@ -237,11 +237,8 @@ router.put('/settings', adminAuth, async (req, res) => {
 router.get('/export', adminAuth, async (req, res) => {
     try {
         const result = await db.execute(`
-            SELECT d.full_name as "الاسم", d.phone as "التليفون", d.birth_date as "تاريخ الميلاد",
-                   d.stage as "المرحلة", d.diaconal_rank as "الرتبة",
-                   ad.label as "اليوم", d.birth_date as "التاريخ",
-                   CASE b.location WHEN 'church' THEN 'الكنيسة' WHEN 'club' THEN 'نادي القديسة مارينا' END as "المكان",
-                   b.created_at as "تاريخ الحجز"
+            SELECT d.full_name, d.phone, d.birth_date, d.stage, d.diaconal_rank,
+                   ad.label as day_label, b.location, b.created_at as booking_date
             FROM bookings b
             JOIN deacons d ON b.deacon_id = d.id
             JOIN available_days ad ON b.day_id = ad.id
@@ -252,10 +249,27 @@ router.get('/export', adminAuth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'لا توجد حجوزات للتصدير' });
         }
 
+        // Explicit mapping to keep DB keys predictable and headers user-friendly (Arabic)
+        // Note: 'التاريخ' (day_date) is removed per request
+        const mapping = [
+            { key: 'full_name', label: 'الاسم' },
+            { key: 'phone', label: 'التليفون' },
+            { key: 'birth_date', label: 'تاريخ الميلاد' },
+            { key: 'stage', label: 'المرحلة' },
+            { key: 'diaconal_rank', label: 'الرتبة' },
+            { key: 'day_label', label: 'اليوم' },
+            { key: 'location', label: 'المكان', transform: v => v === 'church' ? 'الكنيسة' : 'نادي القديسة مارينا' },
+            { key: 'booking_date', label: 'تاريخ الحجز' }
+        ];
+
         const BOM = '\uFEFF';
-        const headers = result.columns;
+        const headers = mapping.map(m => m.label);
         const csv = BOM + headers.join(',') + '\n' +
-            result.rows.map(row => headers.map(h => `"${(row[h] || '').toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+            result.rows.map(row => mapping.map(m => {
+                let val = row[m.key] || '';
+                if (m.transform) val = m.transform(val);
+                return `"${val.toString().replace(/"/g, '""')}"`;
+            }).join(',')).join('\n');
 
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', 'attachment; filename=bookings.csv');
