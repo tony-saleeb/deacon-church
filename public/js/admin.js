@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.innerHTML = `
                     <div class="dc-header">
                         <div class="dc-num">${idx}</div>
-                        <div class="dc-info"><div class="dc-name">${deacon.full_name}</div><div class="dc-meta">${deacon.diaconal_rank} · ${deacon.stage} · ${deacon.phone}</div></div>
+                        <div class="dc-info"><div class="dc-name">${deacon.full_name}</div><div class="dc-meta">${deacon.diaconal_rank} · ${deacon.stage} · ${deacon.birth_date || 'بدون تاريخ'} · ${deacon.phone}</div></div>
                         <span class="dc-count">${bookings.length} حجز</span>
                     </div>
                     <div class="dc-bookings">${bHtml}</div>`;

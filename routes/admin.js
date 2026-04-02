@@ -53,7 +53,7 @@ router.get('/bookings', adminAuth, async (req, res) => {
 
         let query = `
             SELECT b.id as booking_id, b.location, b.created_at as booking_date,
-                   d.id as deacon_id, d.full_name, d.stage, d.diaconal_rank, d.phone,
+                   d.id as deacon_id, d.full_name, d.stage, d.diaconal_rank, d.phone, d.birth_date,
                    ad.day_date, ad.label as day_label
             FROM bookings b
             JOIN deacons d ON b.deacon_id = d.id
@@ -237,7 +237,7 @@ router.put('/settings', adminAuth, async (req, res) => {
 router.get('/export', adminAuth, async (req, res) => {
     try {
         const result = await db.execute(`
-            SELECT d.full_name as "الاسم", d.phone as "التليفون",
+            SELECT d.full_name as "الاسم", d.phone as "التليفون", d.birth_date as "تاريخ الميلاد",
                    d.stage as "المرحلة", d.diaconal_rank as "الرتبة",
                    ad.label as "اليوم", ad.day_date as "التاريخ",
                    CASE b.location WHEN 'church' THEN 'الكنيسة' WHEN 'club' THEN 'نادي القديسة مارينا' END as "المكان",
