@@ -239,7 +239,7 @@ router.get('/export', adminAuth, async (req, res) => {
         const result = await db.execute(`
             SELECT d.full_name as "الاسم", d.phone as "التليفون", d.birth_date as "تاريخ الميلاد",
                    d.stage as "المرحلة", d.diaconal_rank as "الرتبة",
-                   ad.label as "اليوم", ad.birth_date as "التاريخ",
+                   ad.label as "اليوم", ad.day_date as "التاريخ",
                    CASE b.location WHEN 'church' THEN 'الكنيسة' WHEN 'club' THEN 'نادي القديسة مارينا' END as "المكان",
                    b.created_at as "تاريخ الحجز"
             FROM bookings b
